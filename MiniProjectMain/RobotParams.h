@@ -1,74 +1,88 @@
-const unsigned long minInterruptTime = 10;
+const unsigned long minInterruptTime = 10; // In microseconds
 const float pi = 3.1415;
 
+#define MOTOR_ENB_PIN 4
+
+#define MOTOR_ONE_ENCA 2
+#define MOTOR_ONE_ENCB 5
+#define MOTOR_ONE_DIR 7
+#define MOTOR_ONE_SPEED 9
+
+#define MOTOR_TWO_ENCA 3
+#define MOTOR_TWO_ENCB 6
+#define MOTOR_TWO_DIR 8
+#define MOTOR_TWO_SPEED 10
+
+#define K 1.36
+#define SIGMA 14.1
+#define KP 4
+#define KI 15
+#define KIP 3
+
 struct Motor{
-  // Pin Variables
+  // Pins
   uint8_t dirPin;
   uint8_t speedPin;
   uint8_t encAPin;
   uint8_t encBPin;
 
-  // Other necissary variables
+  // Tracking Variables
   volatile long encoderTurns = 0;
   unsigned long lastIntTime;
+  float integralError;
+  float desiredPos;
+  
+  void initPins(uint8_t _dirPin, uint8_t _speedPin, uint8_t _encAPin, uint8_t _encBPin){
+    dirPin = _dirPin;
+    speedPin = _speedPin;
+    encAPin = _encAPin;
+    encBPin = _encBPin;
 
-  void initPins(){
     pinMode(dirPin, OUTPUT);
     pinMode(speedPin, OUTPUT);
     pinMode(encAPin, INPUT);
     pinMode(encBPin, INPUT);
   }
-  float turnsInRadians(){
+
+  void setSpeed(int newSpeed){
+    if(newSpeed > 255) newSpeed = 255;
+    if(newSpeed < 0) newSpeed = 0;
+
+    analogWrite(speedPin, newSpeed);
+  }
+
+  void controllerUpdate(unsigned long ts){
+    float currentPos = getTurnsInRadians();
+    float posError = desiredPos - currentPos;
+    integralError += posError * (float)(ts / 1000);
+
+  }
+
+  float getTurnsInRadians(){
     return (2*pi*(float)encoderTurns / 3200);
   }
 };
 
-struct Robot{
-  // Physical properties of the robot build
-  const float b = 0.215; // 21.5cm
-  const float r = 0.075; // 7.5cm
-  const float wheelCir = 2*r*pi;
-  const uint8_t MOTOR_ENBPin = 4;
+struct MotorShield {
+  Motor MotorOne;
+  Motor MotorTwo;
 
+  void initShield(){
+    pinMode(MOTOR_ENB_PIN, OUTPUT);
+    digitalWrite(MOTOR_ENB_PIN, HIGH);
 
-  Motor MOTOR_L;
-  Motor MOTOR_R;
-
-  // Robot Info Variables
-  float xPos = 0;
-  float yPos = 0;
-  float phi = 0;
-  float dL = 0;
-  float dR = 0;
-
-  void initRobot(){
-    MOTOR_L.initPins();
-    MOTOR_R.initPins();
-    pinMode(MOTOR_ENBPin, OUTPUT);
-    enableMotors();
+    MotorOne.initPins(MOTOR_ONE_DIR, MOTOR_ONE_SPEED, MOTOR_ONE_ENCA, MOTOR_ONE_ENCB);
+    MotorTwo.initPins(MOTOR_TWO_DIR, MOTOR_TWO_SPEED, MOTOR_TWO_ENCA, MOTOR_TWO_ENCB);
   }
 
   void enableMotors(){
-    digitalWrite(MOTOR_ENBPin, HIGH);
+    digitalWrite(MOTOR_ENB_PIN, HIGH);
   }
+
   void disableMotors(){
-    digitalWrite(MOTOR_ENBPin, LOW);
-  }
-
-  void updatePosition(){
-    float newdL = (MOTOR_L.turnsInRadians() / (2*pi)) * wheelCir;
-    float newdR = (MOTOR_R.turnsInRadians() / (2*pi)) * wheelCir;
-
-    float xNew = xPos + cos(phi)*((dL - newdL) + (dR - newdR)) / 2;
-    float yNew = yPos + sin(phi)*((dL - newdL) + (dR - newdR)) / 2;
-    float phiNew = phi + (1 / b)*((dL - newdL) - (dR - newdR));
-
-    dL = newdL;
-    dR = newdR;
-    xPos = xNew;
-    yPos = yNew;
-    phi = phiNew;
+    digitalWrite(MOTOR_ENB_PIN, LOW);
   }
 };
+
 
 
