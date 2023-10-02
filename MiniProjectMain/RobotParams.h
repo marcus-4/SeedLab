@@ -19,6 +19,8 @@ const float pi = 3.1415;
 #define KIP 10
 #define BATTERY_VOLTAGE 7.5
 
+// A struct used to organize the code for running two motors together. This ensures that the exact same code is used for
+// both motors whenever possible. 
 struct Motor{
   // Pins
   uint8_t dirPin;
@@ -30,7 +32,7 @@ struct Motor{
   volatile long encoderTurns = 0;
   unsigned long lastIntTime;
   float integralError;
-  float desiredPos;
+  float desiredPos = 0;
   float lastPos;
   
   void initPins(uint8_t _dirPin, uint8_t _speedPin, uint8_t _encAPin, uint8_t _encBPin){
@@ -60,14 +62,18 @@ struct Motor{
     analogWrite(speedPin, newSpeed);
   }
 
+  // Updates the control loop for this motor, each motor is updated and ran independently.
+  // Sample time since controllerUpdate was last called is passed as an argument
   float controllerUpdate(float ts){
+    // Samples positional and velocity information
     float currentPos = getTurnsInRadians();
     float currentVelocity = (currentPos - lastPos) / (ts / 1000);
 
     float posError = desiredPos - currentPos;
     integralError += posError * (ts / 1000.0f);
-    float desiredVel = KIP * posError + KI * integralError;
+    float desiredVel = KIP * posError + KI * integralError; // This line of code is the PI control block, with KI and KIP parameters
 
+    // The desiredVel found from the PI block is passed into the velocity controller from Assignment 2
     float velError = desiredVel - currentVelocity;
     float setVoltage = KP * velError;
 
@@ -90,6 +96,7 @@ struct Motor{
   }
 };
 
+// A struct wrapper for the Pololu Motor Shield
 struct MotorShield {
   Motor MotorOne;
   Motor MotorTwo;
