@@ -14,9 +14,9 @@ const float pi = 3.1415;
 #define MOTOR_TWO_DIR 8
 #define MOTOR_TWO_SPEED 10
 
-#define KP 3
-#define KI 8
-#define KIP 8
+#define KP 3.2
+#define KI 2
+#define KIP 10
 #define BATTERY_VOLTAGE 7.5
 
 struct Motor{
