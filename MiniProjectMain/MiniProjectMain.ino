@@ -2,6 +2,14 @@
 #include <Wire.h>
 #define MY_ADDR 8
 
+/*
+  SEED Lab: Mini Project 
+  Authors: Landon Berg, Rose Ganshert
+  Description: This code takes I2C input from the raspberry pi and turns the wheels to different positions.
+  Positional control for the motors is implemented using a PI controller. Pins, structs, and constants are declared in the associated
+  RobotParams.h header file. 
+*/
+
 // Function Prototypes
 void encoderOneISR(); // Interrupt for Motor One
 void encoderTwoISR(); // Interrupt for Motor Two

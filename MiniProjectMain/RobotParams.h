@@ -14,6 +14,7 @@ const float pi = 3.1415;
 #define MOTOR_TWO_DIR 8
 #define MOTOR_TWO_SPEED 10
 
+// Control system parameters, as found in Simulink
 #define KP 3.2
 #define KI 2
 #define KIP 10
@@ -96,7 +97,7 @@ struct Motor{
   }
 };
 
-// A struct wrapper for the Pololu Motor Shield
+// A struct wrapper for the Pololu Motor Shield, which contains two Motor objects for the two motors the board supports
 struct MotorShield {
   Motor MotorOne;
   Motor MotorTwo;
