@@ -1,0 +1,11 @@
+our code is split into three seperate files
+  Demo1Photo takes photos that can be run in calibration. you print a checkerboard and it takes photos by pressing s
+  this populates the images left folder for calibration
+  
+  Demo1 Calibration runs a calibration matrix for our camera
+  this is done by printing off a checkerboard that fits the codes or modifying the codes
+  after running this code the images are pulled from the folder and runs a calibration on it
+  this is then outputted to an xml
+
+  Demo1 reads the xml and then opens the camera and warps it then reads the degree by using a ratio of pixelson the trackers and the fov
+  as of now the fov is magic number and we will further tune this ongoing
