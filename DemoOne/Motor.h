@@ -18,16 +18,10 @@ class Motor {
     uint8_t encAPin;
     uint8_t encBPin;
 
-    // Tracking Variables
-    float integralError; // Tracks the ongoing integral error between updates
-    float lastPos; // Keeps the position during the last update so velocity can be approximated
-    float desiredPos = 0;
-    float errorTolerance = 0.05; // Expressed as a percentage
-    bool positionReached = false;
-
-
   public:
+    // Volatile variables set by interrupts
     volatile long encoderTurns = 0;
+    volatile long lastEncoderTurns = 0;
     volatile unsigned long lastIntTime;
     bool isFlipped = false;
 
@@ -51,33 +45,21 @@ class Motor {
   }
 
   void setVoltage(float desiredVolt){
-    // We must manually change direction, as the PWM is an absolute valued signal
+
+    // We must manually set voltage sign, as the PWM is an absolute valued signal
     if(desiredVolt > 0){
       setDirection(FORWARD);
     } else {
       setDirection(BACKWARD);
     }
+
+    // Saturate the desired voltage to the battery voltage before PWM calcs
     if(desiredVolt > BATTERY_VOLTAGE) desiredVolt = BATTERY_VOLTAGE;
     if(desiredVolt < -BATTERY_VOLTAGE) desiredVolt = -BATTERY_VOLTAGE;
+
     // Convert the voltage to a PWM signal and send it to the motor
     int setPWM = round(255.0f * (abs(desiredVolt) / (float)BATTERY_VOLTAGE));
     analogWrite(speedPin, setPWM);
-  }
-
-  /*
-    Position is in Radians! Positional control in meters will be taken care of elsewhere in the code. Integral error is reset to zero each time the target is
-    updated to keep the number from increasing or decreasing wildly, and so there is a more consistent response as the control loop is run for a long period of time
-  */
-  void setDesiredPosition(float newPos){
-    if(newPos == desiredPos){
-      // No change is needed
-      return;
-    } else {
-      // Do everything needed to start moving to a new position
-      positionReached = false;
-      integralError = 0;
-      desiredPos = newPos;
-    }
   }
 
   // Returns the Wheel's current position in Radians, with 0 radians being the position at the time the program started.
@@ -85,12 +67,7 @@ class Motor {
     return (2*pi*(float)encoderTurns / 3200.0f);
   }
 
-  // Getter function for the destinationReached boolean
-  bool isPosReached(){
-    return positionReached;
-  }
-
-  void flip(){
+  void setFlipped(){
     isFlipped = true;
   }
 
