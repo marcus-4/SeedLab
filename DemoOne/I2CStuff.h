@@ -20,7 +20,6 @@ void initI2C(){
   Wire.onRequest(request);
 }
 
-
 void request() {
   uint8_t reply = (uint8_t(instruction[0])+uint8_t(100));
   Wire.write(reply);
@@ -33,8 +32,14 @@ void receive() {
   while (Wire.available()) {
     instruction[msgLength] = Wire.read();
     msgLength++;
-    Serial.print(instruction[0]);
+    //int8_t signedVersion = instruction[0];
+    // Serial.print(msgLength);
+    // Serial.print(" : ");
+    // Serial.println(instruction[msgLength]);
+    // Serial.print("     ");
+    // Serial.println(signedVersion);
   }
+  //Serial.println(msgLength);
 }
 
 void printReceived() {

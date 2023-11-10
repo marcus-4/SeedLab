@@ -16,6 +16,8 @@ const float d = 0.214; // Distance between the two wheels in Meters
   ------------------ Pin Definitions -------------------
 */
 
+#define BUZZER_PIN 11
+
 #define BOARD_ENB_PIN 4
 #define BOARD_SF_PIN 12
 
@@ -44,9 +46,9 @@ const float d = 0.214; // Distance between the two wheels in Meters
 #define KD_DEL_VA 0
 
 // PID controller for angular position
-#define KP_POS 4
-#define KI_POS 0.9
-#define KD_POS 0.4
+#define KP_POS 1
+#define KI_POS 0
+#define KD_POS 0
 
 /*
   -------------------- Miscellaneous Parameters ------------------
@@ -56,12 +58,11 @@ const float d = 0.214; // Distance between the two wheels in Meters
 #define VOLT_CAP 8
 #define VOLT_MIN 0.3
 
-// Number of radians that is considered "close enough"
-#define ROT_THRESH 0.02
-
 // "Fudge Factors" that can consistently account for small errors
 #define FF_LEAN 1.0 // Above one will lean right, below one will lean left
 
 #define FF_DIST 0.02 // In Feet
-#define FF_ROT -0.03
+#define FF_CIRCLE_DIST 0.05
+#define FF_ROT 0.35
+#define FF_RUKO_ANGLE 0
 

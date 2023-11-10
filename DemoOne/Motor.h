@@ -62,6 +62,12 @@ class Motor {
     analogWrite(speedPin, setPWM);
   }
 
+  // Clears encoder values and such
+  void reset(){
+    encoderTurns = 0;
+    lastEncoderTurns = 0;
+  }
+
   // Returns the Wheel's current position in Radians, with 0 radians being the position at the time the program started.
   float getPosInRadians(){
     return (2*pi*(float)encoderTurns / 3200.0f);
