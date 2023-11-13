@@ -7,6 +7,9 @@
 #define ROT_ERROR_THRESHOLD_90 0.2
 #define BUZZER_DELAY 250
 
+#define SHORT_PAUSE 50
+#define NOTE_PAUSE 250
+
 enum OperatingMode {
   DEBUG_PRINT_ENCODER,
   DEBUG_PRINT_I2C,
@@ -72,7 +75,7 @@ float lastRads_R = 0;
 
 unsigned long lastStateEndTime = 0;
 const float circleRadius = feetToMeters(1.5);
-const float desiredCircleVelocity = feetToMeters(0.7);
+const float desiredCircleVelocity = feetToMeters(1.6);
 
 bool searchingRpi = true;
 float distRpi = 0;
@@ -255,7 +258,7 @@ void loop() {
     case DEMO_TYPE_ONE:
       switch (currentState) {
         case SEARCHING:
-          if (!searchingRpi) {
+          if (!searchingRpi && (abs(angRpi) < 10)) {
             // The RPi has found the Ruko maker and sent a distance and angle.
             desiredPos = distRpi;
             desiredRot = angRpi + FF_RUKO_ANGLE;
@@ -268,35 +271,35 @@ void loop() {
             resetControlLoop();
             lastStateEndTime = millis();
             desiredRot = angRpi + FF_RUKO_ANGLE;
-            desiredPos = distRpi - feetToMeters(0.5) - 0.08;
+            desiredPos = distRpi - feetToMeters(0.5);
           }
           break;
         case APPROACHING_TURN:
 
-          if (millis() < lastStateEndTime + 2000) break;
+          // if (millis() < lastStateEndTime + 2000) break;
 
-          if (prevError_ROT < ROT_ERROR_THRESHOLD) {
-            desiredRot = 0;
-            //desiredPos = distRpi;  // Update value here or keep original?
-            resetControlLoop();
-            currentState = APPROACHING_FORWARD;
-            tone(BUZZER_PIN, 220);
-            delay(BUZZER_DELAY);
-            noTone(BUZZER_PIN);
-            resetControlLoop();
-            lastStateEndTime = millis();
-            desiredPos = distRpi - feetToMeters(0.5) - 0.04;
-            Serial.println(distRpi);
-          }
+          // if (prevError_ROT < ROT_ERROR_THRESHOLD) {
+          //   desiredRot = 0;
+          //   //desiredPos = distRpi;  // Update value here or keep original?
+          //   resetControlLoop();
+          //   currentState = APPROACHING_FORWARD;
+          //   tone(BUZZER_PIN, 220);
+          //   delay(BUZZER_DELAY);
+          //   noTone(BUZZER_PIN);
+          //   resetControlLoop();
+          //   lastStateEndTime = millis();
+          //   desiredPos = distRpi - feetToMeters(0.5);
+          //   Serial.println(distRpi);
+          // }
           break;
         case APPROACHING_FORWARD:
           desiredRot = 0;
           if (millis() < lastStateEndTime + 1000) break;
 
           float currentDist = C * (((lastRads_L + lastRads_R) / 2.0f) / (2 * pi));
-          Serial.print(currentDist);
-          Serial.print("     ");
-          Serial.println(desiredPos);
+          // Serial.print(currentDist);
+          // Serial.print("     ");
+          // Serial.println(desiredPos);
           if (currentDist >= desiredPos) {
             resetControlLoop();
             tone(BUZZER_PIN, 220);
@@ -352,7 +355,7 @@ void loop() {
           break;
 
         case SEARCHING:
-          if (!searchingRpi) {
+          if (!searchingRpi && (abs(angRpi) < 0.17f)) {
             // The RPi has found the Ruko maker and sent a distance and angle.
             desiredPos = distRpi;
             desiredRot = angRpi + FF_RUKO_ANGLE;
@@ -365,7 +368,7 @@ void loop() {
             resetControlLoop();
             lastStateEndTime = millis();
             desiredRot = angRpi + FF_RUKO_ANGLE;
-            desiredPos = distRpi - feetToMeters(0.5) - 0.03;
+            desiredPos = distRpi - feetToMeters(0.5) - 0.08;
           }
           break;
 

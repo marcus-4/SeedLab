@@ -62,7 +62,7 @@ const float d = 0.214; // Distance between the two wheels in Meters
 #define FF_LEAN 1.0 // Above one will lean right, below one will lean left
 
 #define FF_DIST 0.02 // In Feet
-#define FF_CIRCLE_DIST 0.05
+#define FF_CIRCLE_DIST 0.015
 #define FF_ROT 0.35
 #define FF_RUKO_ANGLE 0
 
