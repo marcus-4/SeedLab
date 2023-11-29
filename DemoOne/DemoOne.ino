@@ -1,5 +1,6 @@
 #include "Motor.h"
 #include "I2CStuff.h"
+#include "AudioStuff.h"
 
 #define SEARCHING_ROT_VEL pi / 8
 #define APPROACHING_FOR_VEL 0.4
@@ -164,97 +165,6 @@ void loop() {
       }
       break;
 
-      /*
-      A test sequence to make sure the robot can handle sequential instructions
-    */
-      // case DEBUG_TEST_SEQUENCE:
-      //   switch (currentState) {
-      //     case SEARCHING:
-      //       currentState = APPROACHING_TURN;
-      //       desiredRot = (3.0f * (pi / 2.0f)) + FF_ROT;
-      //       desiredPos = 0;
-      //       lastStateEndTime = millis();
-      //       break;
-
-      //     case APPROACHING_TURN:
-      //       desiredRot = (3.0f * (pi / 2.0f)) + FF_ROT;
-      //       desiredPos = 0;
-
-      //       if (millis() < lastStateEndTime + 2000) break;
-
-      //       if (prevError_ROT < ROT_ERROR_THRESHOLD) {
-      //         desiredRot = 0;
-      //         desiredPos = 0;
-      //         resetControlLoop();
-      //         currentState = APPROACHING_FORWARD;
-      //         tone(BUZZER_PIN, 220);
-      //         delay(1500);
-      //         noTone(BUZZER_PIN);
-      //         resetControlLoop();
-      //       }
-      //       break;
-
-      //     case APPROACHING_FORWARD:
-      //       desiredRot = 0;
-      //       desiredPos = feetToMeters(2);
-      //       currentDist = C * (((lastRads_L + lastRads_R) / 2.0f) / (2 * pi));
-      //       if (currentDist >= desiredPos) {
-      //         desiredRot = 0;
-      //         desiredPos = 0;
-      //         resetControlLoop();
-      //         currentState = TURNING_90;
-      //         tone(BUZZER_PIN, 220);
-      //         delay(1500);
-      //         noTone(BUZZER_PIN);
-      //         resetControlLoop();
-      //         desiredRot = (pi / 2.0f);
-      //         desiredPos = 0;
-      //         lastStateEndTime = millis();
-      //       }
-      //       break;
-
-      //     case TURNING_90:
-      //       desiredRot = (pi / 2.0f);
-      //       desiredPos = 0;
-
-      //       if (millis() < lastStateEndTime + 2000) break;
-
-      //       if (prevError_ROT < ROT_ERROR_THRESHOLD_90) {
-      //         desiredRot = 0;
-      //         desiredPos = 0;
-      //         resetControlLoop();
-      //         currentState = CIRCLING;
-      //         tone(BUZZER_PIN, 220);
-      //         delay(1500);
-      //         noTone(BUZZER_PIN);
-      //         resetControlLoop();
-      //       }
-      //       break;
-
-      //     case CIRCLING:
-      //       desiredRot = 0;
-      //       desiredPos = feetToMeters(2) * pi;
-      //       currentDist = C * (((lastRads_L + lastRads_R) / 2.0f) / (2 * pi));
-      //       if (currentDist >= desiredPos) {
-      //         desiredRot = 0;
-      //         desiredPos = 0;
-      //         resetControlLoop();
-      //         currentState = END;
-      //         tone(BUZZER_PIN, 220);
-      //         delay(1500);
-      //         noTone(BUZZER_PIN);
-      //         resetControlLoop();
-      //         lastStateEndTime = millis();
-      //       }
-      //       break;
-
-      //     case END:
-      //       desiredRot = 0;
-      //       desiredPos = 0;
-      //       break;
-      //   }
-      //   break;
-
     case DEMO_TYPE_ONE:
       switch (currentState) {
         case SEARCHING:
@@ -276,21 +186,6 @@ void loop() {
           break;
         case APPROACHING_TURN:
 
-          // if (millis() < lastStateEndTime + 2000) break;
-
-          // if (prevError_ROT < ROT_ERROR_THRESHOLD) {
-          //   desiredRot = 0;
-          //   //desiredPos = distRpi;  // Update value here or keep original?
-          //   resetControlLoop();
-          //   currentState = APPROACHING_FORWARD;
-          //   tone(BUZZER_PIN, 220);
-          //   delay(BUZZER_DELAY);
-          //   noTone(BUZZER_PIN);
-          //   resetControlLoop();
-          //   lastStateEndTime = millis();
-          //   desiredPos = distRpi - feetToMeters(0.5);
-          //   Serial.println(distRpi);
-          // }
           break;
         case APPROACHING_FORWARD:
           desiredRot = 0;
