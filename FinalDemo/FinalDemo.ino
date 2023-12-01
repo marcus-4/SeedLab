@@ -16,7 +16,12 @@ enum BotState {
   DEBUG_CONSTANT_FORWARD_POSITION,
   DEBUG_CONSTANT_ROTATIONAL_POSITION,
   DEBUG_CONSTANT_CIRCLE,
-  DEMO_START
+  DEMO_START,
+  DEMO_INIT_SEARCH,
+  DEMO_TRACKING_ROT,
+  DEMO_APPROACH,
+  DEMO_CIRCLING,
+  DEMO_END
 };
 
 // Function Prototypes
@@ -42,7 +47,7 @@ Motor Motor_R = Motor(MOTOR_RIGHT_DIR, MOTOR_RIGHT_SPEED, MOTOR_RIGHT_ENCA, MOTO
 // Wrapper holding the data that is sent by the Raspberry Pi
 RpiData recentRpiData;
 
-// Debug parameters used in the various debug modes
+// Debug parameters used in the debug states
 const float desiredVoltage_DEBUG = 2;                          // Volts
 const float desiredForVelocity_DEBUG = feetToMeters(0.5);      // Meters per second
 const float desiredRotVelocity_DEBUG = pi / 4;                 // Radians per second
@@ -51,8 +56,12 @@ const float desiredRot_DEBUG = (3.0f * (pi / 2.0f)) + FF_ROT;  // Radians
 const float desiredCircleRadius_DEBUG = feetToMeters(1);       // Meters radius
 const float desiredCircleVelocity_DEBUG = feetToMeters(0.5);   // Meters per second
 
-const float circleRadius = feetToMeters(1.5);
-const float desiredCircleVelocity = feetToMeters(1.6);
+// Parameters used in the demo states
+const float desiredRotVelocity_DEMO_INIT_SEARCH = pi / 8;
+const float rotationThreshold_DEMO_TRACKING_ROT = 0.2; // Radians
+const float desiredForVelocity_DEMO_APPROACH = feetToMeters(0.5);
+const float desiredCircleRadius_DEMO_CIRCLING = feetToMeters(1.5);
+const float desiredCircleVelocity_DEMO_CIRCLING = feetToMeters(1.6);
 
 // Timer trackers
 unsigned long lastSampleTime = 0;
@@ -70,6 +79,9 @@ float integralError_DEL_VA = 0;
 float lastRads_L = 0;
 float lastRads_R = 0;
 
+// Stored approach distance
+float approachDist;
+int markerCount = 0;
 
 /* 
    ----------------------------------------
@@ -143,6 +155,7 @@ void loop() {
   //  --------------------- Pre-Control Loop Checks --------------------
 
   float desiredRot;
+  float currentDist = C * (((lastRads_L + lastRads_R) / 2.0f) / (2 * pi));
 
   // Each case statement is responsible for
   //      1.) Setting a desiredRot
@@ -171,7 +184,6 @@ void loop() {
 
     case DEBUG_CONSTANT_FORWARD_POSITION:
       desiredRot = 0;
-      float currentDist = C * (((lastRads_L + lastRads_R) / 2.0f) / (2 * pi));
       if (currentDist >= desiredPos_DEBUG) {
         resetControlLoop();
         transitionNoise();
@@ -189,6 +201,58 @@ void loop() {
       break;
 
     case DEMO_START:
+      desiredRot = 0;
+      currentState = DEMO_INIT_SEARCH;
+      break;
+
+    case DEMO_INIT_SEARCH:
+      desiredRot = 0;
+      if(!recentRpiData.isSearching){
+        resetControlLoop();
+        transitionNoise();
+        resetControlLoop();
+        currentState = DEMO_TRACKING_ROT;
+      }
+      break;
+    
+    case DEMO_TRACKING_ROT:
+      desiredRot = 0;
+      if(recentRpiData.lastAngle <= rotationThreshold_DEMO_TRACKING_ROT){
+        resetControlLoop();
+        transitionNoise();
+        resetControlLoop();
+        currentState = DEMO_APPROACH;
+        approachDist = recentRpiData.lastDistance;
+      }
+      break;
+
+    case DEMO_APPROACH:
+      desiredRot = 0;
+      if(currentDist >= approachDist){
+        resetControlLoop();
+        transitionNoise();
+        resetControlLoop();
+        markerCount++;
+        if(markerCount >= 7){
+          currentState = DEMO_END;
+        } else {
+          currentState = DEMO_CIRCLING;
+        }
+      }
+      break;
+    
+    case DEMO_CIRCLING:
+      desiredRot = 0;
+      if(!recentRpiData.isSearching) {
+        resetControlLoop();
+        transitionNoise();
+        resetControlLoop();
+        currentState = DEMO_TRACKING_ROT;
+      }
+      break;
+    
+    case DEMO_END:
+      desiredRot = 0;
       break;
   }
 
@@ -218,11 +282,17 @@ void loop() {
     // Position Error Calculations
     float currentRot = r * ((rads_L - rads_R) / d);
     float rotError = desiredRot - currentRot;
+
+    // Override how rotError is calculated for the TRACKING_ROT state
+    if(currentState == DEMO_TRACKING_ROT){
+      rotError = recentRpiData.lastAngle;
+    }
+
     integralError_POS += rotError * actualTs;
     float derivativeError_ROT = (rotError - prevError_ROT) / actualTs;
     prevError_ROT = rotError;
 
-    // Find Desired Forward Velocity
+    // -------------------- Find Desired Forward Velocity ---------------------
     switch (currentState) {
       case DEBUG_CONSTANT_FORWARD_POSITION:
       case DEBUG_CONSTANT_FORWARD_VELOCITY:
@@ -233,17 +303,29 @@ void loop() {
         desiredForVelocity = desiredCircleVelocity_DEBUG;
         break;
 
+      case DEMO_APPROACH:
+        desiredForVelocity = desiredForVelocity_DEMO_APPROACH;
+        break
+
+      case DEMO_CIRCLING:
+        desiredForVelocity = desiredCircleVelocity_DEMO_CIRCLING;
+        break;
+
       case DEBUG_PRINT_ENCODER:
       case DEBUG_PRINT_I2C:
       case DEBUG_CONSTANT_ROTATIONAL_VELOCITY:
       case DEBUG_CONSTANT_ROTATIONAL_POSITION:
       case DEBUG_STOP:
+      case DEMO_START:
+      case DEMO_INIT_SEARCH:
+      case DEMO_TRACKING_ROT:
+      case DEMO_END:
       default:
         desiredForVelocity = 0;
         break;
     }
 
-    // Find Desired Rotational Velocity
+    // -------------------- Find Desired Rotational Velocity --------------------
     switch (currentState) {
       // Use PID equation to calculate Rotational Velocity
       case DEBUG_PRINT_ENCODER:
@@ -252,6 +334,8 @@ void loop() {
       case DEBUG_CONSTANT_FORWARD_POSITION:
       case DEBUG_CONSTANT_FORWARD_VELOCITY:
       case DEBUG_CONSTANT_ROTATIONAL_POSITION:
+      case DEMO_TRACKING_ROT:
+      case DEMO_APPROACH:
         desiredRotVelocity = (rotError * KP_POS) + (derivativeError_ROT * KD_POS) + (integralError_POS * KI_POS);
         break;
 
@@ -265,6 +349,16 @@ void loop() {
         desiredRotVelocity = -(desiredCircleVelocity_DEBUG / desiredCircleRadius_DEBUG);
         break;
 
+      case DEMO_CIRCLING:
+        desiredRotVelocity = -(desiredCircleVelocity_DEMO_CIRCLING / desiredCircleRadius_DEMO_CIRCLING);
+        break;
+
+      case DEMO_INIT_SEARCH:
+        desiredRotVelocity = desiredRotVelocity_DEMO_INIT_SEARCH;
+        break;
+
+      case DEMO_START:
+      case DEMO_END:
       default:
         desiredRotVelocity = 0;
     }
@@ -337,6 +431,7 @@ float feetToMeters(float ft) {
 
 // Plays a tone indicating a change in states
 void transitionNoise() {
+  tone(BUZZER_PIN, 440, 500);
 }
 
 // Cleaner function to be called in between steps in the state machine, ie reset to inital conditions
