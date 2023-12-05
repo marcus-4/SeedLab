@@ -11,14 +11,13 @@ We are planning to make this automated however we couldnt figure out
 how to get the xml to output propperly when working with one variable
 
 
-Team Member                        Task
--------------------------------------------------------------------------
-Landon                             Tuning the controller and arduino code
-Rose                               Mechanical Assembly of the robot
-Marcus                             Tuning detection parameters
-Stow                               Integrating I2c communication to arduino
-
-All                                Debugging and refinement.
+| Team Member | Task                                            |
+|-------------|-------------------------------------------------|
+| Landon      | Tuning the controller and Arduino code          |
+| Rose        | Mechanical Assembly of the robot                 |
+| Marcus      | Tuning detection parameters                      |
+| Stow        | Integrating I2C communication to Arduino        |
+| All         | Debugging and refinement.                       |
 
 
 
