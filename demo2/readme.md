@@ -20,16 +20,13 @@ how to get the xml to output propperly when working with one variable
 | All         | Debugging and refinement.                       |
 
 
+ Source file index
 
-Source file index:
-Name                               Description
----------------------------------------------------------------------------
-DemoOne.ino                        Arduino project code
+ | Name             | Description                           |
+|------------------:|:---------------------------------------:|
+| DemoOne.ino      | Arduino project code                  |
+| I2CStuff.h       | Arduino I2C header                    |
+| Motor.h          | Arduino motor header                  |
+| RobotParams.h    | Arduino robot parameters header       |
+| demo2.py         | Raspberry Pi detection code           |
 
-I2CStuff.h                         Arduino i2c header
-
-Motor.h                            Ardunio motor header
-
-RobotParams.h                      arduino robot parameters header
-
-demo2.py                           Raspberry pi detection code
