@@ -12,7 +12,7 @@ how to get the xml to output propperly when working with one variable
 
 
 | Team Member | Task                                            |
-|-------------|-------------------------------------------------|
+|-------------:|:-------------------------------------------------:|
 | Landon      | Tuning the controller and Arduino code          |
 | Rose        | Mechanical Assembly of the robot                 |
 | Marcus      | Tuning detection parameters                      |
