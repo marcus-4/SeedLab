@@ -19,3 +19,18 @@ Marcus                             Tuning detection parameters
 Stow                               Integrating I2c communication to arduino
 
 All                                Debugging and refinement.
+
+
+
+Source file index:
+Name                               Description
+---------------------------------------------------------------------------
+DemoOne.ino                        Arduino project code
+
+I2CStuff.h                         Arduino i2c header
+
+Motor.h                            Ardunio motor header
+
+RobotParams.h                      arduino robot parameters header
+
+demo2.py                           Raspberry pi detection code
