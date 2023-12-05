@@ -9,3 +9,13 @@ if you want to recalibrate it, you must change the x, y, h, k, and other files g
 hardcoded in demo 2
 We are planning to make this automated however we couldnt figure out
 how to get the xml to output propperly when working with one variable
+
+
+Team Member                        Task
+-------------------------------------------------------------------------
+Landon                             Tuning the controller and arduino code
+Rose                               Mechanical Assembly of the robot
+Marcus                             Tuning detection parameters
+Stow                               Integrating I2c communication to arduino
+
+All                                Debugging and refinement.
