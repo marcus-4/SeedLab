@@ -8,6 +8,8 @@
 
 #define BUZZER_DURATION 250
 
+#define FF_APPROACH 0.1
+
 enum BotState {
   DEBUG_PRINT_ENCODER,
   DEBUG_PRINT_I2C,
@@ -31,10 +33,12 @@ enum BotState {
 void leftEncoderISR();
 void rightEncoderISR();
 float feetToMeters(float ft);
+float metersToFeet(float m);
 void resetControlLoop();
 void transitionNoise();
 void errorNoise();
 float calcDesiredRot(RpiData data);
+void printRpiData(RpiData dataToPrint);
 
 /* 
    -----------------------------------------
@@ -49,25 +53,22 @@ BotState currentState = DEMO_START;
 Motor Motor_L = Motor(MOTOR_LEFT_DIR, MOTOR_LEFT_SPEED, MOTOR_LEFT_ENCA, MOTOR_LEFT_ENCB);
 Motor Motor_R = Motor(MOTOR_RIGHT_DIR, MOTOR_RIGHT_SPEED, MOTOR_RIGHT_ENCA, MOTOR_RIGHT_ENCB);
 
-// Wrapper holding the data that is sent by the Raspberry Pi
-RpiData recentRpiData;
-
 // Debug parameters used in the debug states
-const float desiredVoltage_DEBUG = 2;                          // Volts
-const float desiredForVelocity_DEBUG = feetToMeters(0.5);      // Meters per second
-const float desiredRotVelocity_DEBUG = pi / 4;                 // Radians per second
-const float desiredPos_DEBUG = feetToMeters(2);                // Meters
-const float desiredRot_DEBUG = (3.0f * (pi / 2.0f)) + FF_ROT;  // Radians
-const float desiredCircleRadius_DEBUG = feetToMeters(1);       // Meters radius
-const float desiredCircleVelocity_DEBUG = feetToMeters(0.5);   // Meters per second
+const float desiredVoltage_DEBUG = 2;                         // Volts
+const float desiredForVelocity_DEBUG = feetToMeters(1);     // Meters per second
+const float desiredRotVelocity_DEBUG = pi / 4;                // Radians per second
+const float desiredPos_DEBUG = feetToMeters(2);               // Meters
+const float desiredRot_DEBUG = pi / 4;                        // Radians
+const float desiredCircleRadius_DEBUG = feetToMeters(1);      // Meters radius
+const float desiredCircleVelocity_DEBUG = feetToMeters(0.5);  // Meters per second
 
 // Parameters used in the demo states
 const float desiredRotVelocity_DEMO_INIT_SEARCH = pi / 8;
-const float rotationThreshold_DEMO_TRACKING_ROT = pi / 64;  // Radians
-const float perpendicularDist_DEMO_TRACKING_ROT = feetToMeters(0.5);
-const float desiredForVelocity_DEMO_APPROACH = feetToMeters(0.5);
+const float rotationThreshold_DEMO_TRACKING_ROT = 0.001;  // Radians
+const float perpendicularDist_DEMO_TRACKING_ROT = feetToMeters(0.9);
+const float desiredForVelocity_DEMO_APPROACH = feetToMeters(1.2);
 const float desiredCircleRadius_DEMO_CIRCLING = feetToMeters(1.1);
-const float desiredCircleVelocity_DEMO_CIRCLING = feetToMeters(0.5);
+const float desiredCircleVelocity_DEMO_CIRCLING = feetToMeters(1.4);
 
 // Timer trackers
 unsigned long lastSampleTime = 0;
@@ -88,6 +89,8 @@ float lastRads_R = 0;
 // Stored approach distance
 float approachDist;
 int markerCount = 0;
+
+RpiData delayedRpiData;
 
 /* 
    ----------------------------------------
@@ -135,28 +138,39 @@ void setup() {
 void loop() {
   // ----------------- Check for Incoming I2C Data -------------------
 
-  // Check if there is an available message
-  if (msgLength > 0) {
+  // // Check if there is an available message
+  // if (msgLength > 0) {
 
-    // Ensure that we recieved the expected 4 byte package
-    if (msgLength == 4) {
+  //   // Ensure that we recieved the expected 4 byte package
+  //   if (msgLength == 4) {
 
-      // Can the Rpi see an Aruko Marker
-      recentRpiData.isSearching = instruction[1];
+  //     // Can the Rpi see an Aruko Marker
+  //     recentRpiData.isSearching = instruction[1];
 
-      // Convert signed 8-bit degree value to the marker angle in radians
-      int8_t signedAngle = instruction[2];
-      float degRpi = (float)signedAngle;
-      recentRpiData.lastAngle = degRpi * (pi / 180.0f);  // Convert to radians
+  //     // Convert signed 8-bit degree value to the marker angle in radians
+  //     int8_t signedAngle = instruction[2];
+  //     float degRpi = (float)signedAngle;
+  //     recentRpiData.lastAngle = degRpi * (pi / 180.0f);  // Convert to radians
+  //     recentRpiData.lastAngle -= 0.09;                   // Calibration Offset
 
-      // Convert marker distance from centimeters to Meters
-      float distRpi = (float)instruction[3];
-      recentRpiData.lastDistance = distRpi / 100.0f;
-    }
+  //     // Convert marker distance from centimeters to Meters
+  //     float distRpi = (float)instruction[3];
+  //     recentRpiData.lastDistance = distRpi / 100.0f;
+  //     recentRpiData.lastDistance -= feetToMeters(0.3);
 
-    // Clear msgLength indicating we have recieved the message
-    msgLength = 0;
-  }
+  //     if (recentRpiData.isSearching) {
+  //       recentRpiData.lastDistance = 0;
+  //       recentRpiData.lastAngle = 0;
+  //     }
+  //   }
+
+  //   // Clear msgLength indicating we have recieved the message
+  //   msgLength = 0;
+  // }
+
+  delayedRpiData.isSearching = recentRpiData.isSearching;
+  delayedRpiData.rawAngle = recentRpiData.rawAngle;
+  delayedRpiData.rawDistance = recentRpiData.rawDistance;
 
   //  --------------------- Pre-Control Loop Checks --------------------
 
@@ -180,12 +194,7 @@ void loop() {
 
     case DEBUG_PRINT_I2C:
       desiredRot = 0;
-      Serial.print("Is Searching: ");
-      Serial.print(recentRpiData.isSearching);
-      Serial.print(", Angle(Radians): ");
-      Serial.print(recentRpiData.lastAngle);
-      Serial.print(", Distance(Meters): ");
-      Serial.println(recentRpiData.lastDistance);
+      recentRpiData.printData();
       break;
 
     case DEBUG_CONSTANT_FORWARD_POSITION:
@@ -207,7 +216,7 @@ void loop() {
       break;
 
     case DEBUG_TRACKING_ROT:
-      desiredRot = calcDesiredRot(recentRpiData);
+      desiredRot = calcDesiredRot(delayedRpiData);
       Serial.println(desiredRot);
       break;
 
@@ -224,52 +233,46 @@ void loop() {
       if (!recentRpiData.isSearching) {
         resetControlLoop();
         transitionNoise();
+        //recentRpiData.printData();
         delay(2000);
+        //recentRpiData.printData();
         resetControlLoop();
-        desiredRot = calcDesiredRot(recentRpiData);
-        currentState = DEMO_TRACKING_ROT;
-        prevError_ROT = 10;
+        desiredRot = recentRpiData.calcDesiredRot(perpendicularDist_DEMO_TRACKING_ROT, botLength);
+        approachDist = recentRpiData.getDist();
+        currentState = DEMO_APPROACH;
+        prevError_ROT = desiredRot;
       }
       break;
 
     case DEMO_TRACKING_ROT:
       //desiredRot = calcDesiredRot(recentRpiData);
-      Serial.println(prevError_ROT);
+      //Serial.println(prevError_ROT);
       if (abs(prevError_ROT) <= rotationThreshold_DEMO_TRACKING_ROT) {
         resetControlLoop();
         transitionNoise();
         resetControlLoop();
         currentState = DEMO_APPROACH;
-        approachDist = recentRpiData.lastDistance;
+        //approachDist = recentRpiData.lastDistance;
       }
       break;
 
     case DEMO_APPROACH:
       desiredRot = 0;
-      if (currentDist >= (approachDist + botLength)) {
+      if (currentDist >= (approachDist - FF_APPROACH)) {
         resetControlLoop();
         transitionNoise();
         resetControlLoop();
-        markerCount++;
-        if (markerCount >= 7) {
-          currentState = DEMO_END;
-        } else {
-          currentState = DEMO_CIRCLING;
-        }
+        currentState = DEMO_END;
       }
       break;
 
     case DEMO_CIRCLING:
       desiredRot = 0;
-      if (!recentRpiData.isSearching) {
+      if (currentDist >= (2 * desiredCircleRadius_DEMO_CIRCLING * pi)) {
         resetControlLoop();
         transitionNoise();
-        delay(2000);
-        desiredRot = calcDesiredRot(recentRpiData);
         resetControlLoop();
-        desiredRot = calcDesiredRot(recentRpiData);
-        currentState = DEMO_TRACKING_ROT;
-        prevError_ROT = 10;
+        currentState = DEMO_END;
       }
       break;
 
@@ -447,6 +450,10 @@ float feetToMeters(float ft) {
   return (ft * 0.3048);
 }
 
+float metersToFeet(float m) {
+  return (m / 0.3048);
+}
+
 // Plays a tone indicating a change in states
 void transitionNoise() {
   tone(BUZZER_PIN, 220, BUZZER_DURATION);
@@ -456,13 +463,24 @@ void errorNoise() {
   tone(BUZZER_PIN, 880, BUZZER_DURATION);
 }
 
+void printRpiData(RpiData dataToPrint) {
+  Serial.print("Is Searching: ");
+  Serial.print(dataToPrint.isSearching);
+  Serial.print(", Angle(Radians): ");
+  Serial.print(dataToPrint.getAngle());
+  Serial.print(", Distance(Feet): ");
+  Serial.print(metersToFeet(dataToPrint.getDist()));
+  Serial.print(", Distance(Meters): ");
+  Serial.println(dataToPrint.getDist());
+}
+
 // Calculates a desired targetRot using data sent from the Rpi. Defaults to pi/6 if the Rpi cannot see a marker
 float calcDesiredRot(RpiData data) {
   float desiredRot;
   if (!data.isSearching) {
-    desiredRot = (atan(perpendicularDist_DEMO_TRACKING_ROT / data.lastDistance) - data.lastAngle);
+    desiredRot = (atan(perpendicularDist_DEMO_TRACKING_ROT / (data.getDist() + botLength)) - data.getAngle());
   } else {
-    desiredRot = (pi / 6);
+    desiredRot = (pi / 8);
     errorNoise();
   }
 

@@ -47,8 +47,8 @@ const float botLength = 0.28; // 11in
 #define KD_DEL_VA 0
 
 // PID controller for angular position
-#define KP_POS 1
-#define KI_POS 0
+#define KP_POS 1.2
+#define KI_POS 0.04
 #define KD_POS 0
 
 /*
